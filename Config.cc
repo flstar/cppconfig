@@ -34,7 +34,7 @@ void Config::dump() const
 {
 	printf("==================== Dump config ====================\n");
 	map<string, string>::const_iterator iter;
-	for (iter = itemMap_.begin(); iter != itemMap_.end(); ++iter) {
+	for (iter = items.begin(); iter != items.end(); ++iter) {
 		printf("%s = %s\n", iter->first.c_str(), iter->second.c_str());
 	}
 	printf("=====================================================\n");
@@ -46,7 +46,7 @@ YAML::Emitter & operator << (YAML::Emitter &em, const Config &cfg)
 	string prefix = ".";
 	em << YAML::BeginMap;
 	map<string, string>::const_iterator iter;
-	for (iter = cfg.itemMap_.begin(); iter != cfg.itemMap_.end(); ++iter) {
+	for (iter = cfg.items.begin(); iter != cfg.items.end(); ++iter) {
 		const string &key = "." + iter->first;
 		const string &value = iter->second;
 		
@@ -90,6 +90,7 @@ YAML::Emitter & operator << (YAML::Emitter &em, const Config &cfg)
 	for (size_t pos = 0; pos != string::npos; pos = prefix.find('.', pos + 1)) {
 		em	<< YAML::EndMap;
 	}
+	return em;
 }
 
 // prefix does not have tailing '.'
@@ -99,15 +100,15 @@ void Config::loadYamlNode(string prefix, const YAML::Node &node)
 
 	switch(node.Type()) {
 	case YAML::NodeType::Null:
-		itemMap_[prefix] = "";
+		items[prefix] = "";
 		break;
 	case YAML::NodeType::Scalar:
-		itemMap_[prefix] = node.to<string>();
+		items[prefix] = node.to<string>();
 		break;
 	case YAML::NodeType::Sequence:
 		em << YAML::Flow;
 		em << node;
-		itemMap_[prefix] = em.c_str();
+		items[prefix] = em.c_str();
 		break;
 	case YAML::NodeType::Map:
 		if (prefix.size() != 0) {
@@ -154,8 +155,7 @@ void Config::loadFile(const string &fn)
 		loadStream(fin);
 	}
 	else {
-		throw ConfigException(errno,
-			"Failed to open file: %s", fn.c_str());
+		throw ConfigException(errno, "Failed to open file: %s", fn.c_str());
 	}
 }
 
@@ -183,7 +183,7 @@ void Config::loadEnv(const string &prefix)
 			}
 		}
 		// Insert into map
-		itemMap_[name] = value;
+		items[name] = value;
 	}
 }
 
@@ -208,19 +208,8 @@ void Config::loadUrl(const string &url)
 
 void Config::loadv(const vector<string> &urls)
 {
-	bool loaded = false;
-
-	for (int i=urls.size()-1; i>=0; i--) {
-		try {
-			loadUrl(urls[i]);
-			loaded = true;
-		} catch(...) {
-			// Do NOT need all urls exist
-		}
-	}
-	if (!loaded) {
-		// At least one succeeded
-		throw string("Need at least one URL");
+	for (size_t i = urls.size() - 1; i >= 0; i--) {
+		loadUrl(urls[i]);
 	}
 }
 
@@ -236,16 +225,16 @@ void Config::load(const char *url, ...)
 		urls.push_back(curr);
 		curr = va_arg(args, const char *);
 	} while (curr != NULL);
-  
+
 	va_end(args);
-  
+
 	loadv(urls);
 }
 
 string Config::getItem(const string &key) const
 {
 	try {
-		return itemMap_.at(key);
+		return items.at(key);
 	}
 	catch(out_of_range) {
 		throw ConfigException(ConfigException::KEY_NOT_FOUND, "No such key: %s", key.c_str());
@@ -254,7 +243,7 @@ string Config::getItem(const string &key) const
 
 void Config::setItem(const string &key, const string &value)
 {
-	itemMap_[key] = value;
+	items[key] = value;
 }
 
 template<>
@@ -325,7 +314,7 @@ vector<string> Config::list(const string &dir) const
 	vector<string> listvect;
 
 	// Compare the key of each item with "dir."
-	for (map<string, string>::const_iterator iter = itemMap_.begin(); iter != itemMap_.end(); ++iter) {
+	for (map<string, string>::const_iterator iter = items.begin(); iter != items.end(); ++iter) {
 		string key = iter->first;
 		if (key.compare(0, prefix.size(), prefix) == 0) {
 			// Get next segemnt in key
@@ -345,7 +334,7 @@ vector<string> Config::list(const string &dir) const
 	return listvect;
 }
 
-Config Config::getSubConfig(const string &dir)
+Config Config::getSub(const string &dir)
 {
 	Config cfg;
 
@@ -360,7 +349,7 @@ Config Config::getSubConfig(const string &dir)
 	}
 	// If current item is an item under dir, put it into new config
 	string prefix = dir + '.';
-	for (map<string, string>::const_iterator iter = itemMap_.begin(); iter != itemMap_.end(); ++iter) {
+	for (map<string, string>::const_iterator iter = items.begin(); iter != items.end(); ++iter) {
 		const string &key = iter->first;
 		if (key.compare(0, prefix.size(), prefix) == 0) {
 			cfg.setItem(key.substr(pos), iter->second);

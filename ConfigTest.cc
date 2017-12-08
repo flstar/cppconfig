@@ -52,9 +52,9 @@ int main(int argc, char *argv[])
 
 const string yaml_str = "\
 config:\n\
-    bitsflow:\n\
-        agent: localhost:1234\n\
-        service: 5678\n\
+    server:\n\
+        host: localhost\n\
+        port: 5678\n\
     testnum1: 100\n\
     testnum2: 1K\n\
     testnum3: 1m\n\
@@ -65,6 +65,7 @@ config:\n\
     booltrue: true\n\
     boolfalse: FALSE\n\
     boolinvalid: invalid-bool\n\
+    var1: <<config.server.host>>\n\
 ";
 
  
@@ -80,8 +81,8 @@ TEST_F(ConfigTest, LongValue)
 	TestableConfig cfg;
 	cfg.loadString(yaml_str);
 
-	EXPECT_EQ("5678", cfg.get<string>("config.bitsflow.service"));
-	EXPECT_EQ(5678L, cfg.get<long>("config.bitsflow.service"));
+	EXPECT_EQ("5678", cfg.get<string>("config.server.port"));
+	EXPECT_EQ(5678L, cfg.get<long>("config.server.port"));
 	try {
 		cfg.get<long>("config.testnum-invalid");
 		FAIL();
@@ -127,10 +128,10 @@ TEST_F(ConfigTest, LoadEnv)
 	TestableConfig cfg;
 	cfg.loadString(yaml_str);
 
-	putenv((char*)"CONFIGTEST_config_bitsflow_service=8765");
+	putenv((char*)"CONFIGTEST_config_server_port=8765");
 	cfg.loadEnv("CONFIGTEST_");
 
-	EXPECT_EQ(8765, cfg.get<long>("config.bitsflow.service"));
+	EXPECT_EQ(8765, cfg.get<long>("config.server.port"));
 }
 
 TEST_F(ConfigTest, List)
@@ -138,25 +139,25 @@ TEST_F(ConfigTest, List)
 	TestableConfig cfg;
 	cfg.loadString(yaml_str);
 
-	vector<string> items = cfg.list("config.bitsflow");
+	vector<string> items = cfg.list("config.server");
 	
 	EXPECT_EQ(2, items.size());
-	EXPECT_IN("agent", items);
-	EXPECT_IN("service", items);
+	EXPECT_IN("host", items);
+	EXPECT_IN("port", items);
 
 	items = cfg.list("config");
-	EXPECT_IN("bitsflow", items);
+	EXPECT_IN("server", items);
 }
 
-TEST_F(ConfigTest, GetSubConfig)
+TEST_F(ConfigTest, GetSub)
 {
 	TestableConfig cfg;
 	cfg.loadString(yaml_str);
 
-	Config subcfg = cfg.getSubConfig("config.bitsflow");
+	Config subcfg = cfg.getSub("config.server");
 	
-	EXPECT_EQ("localhost:1234", subcfg.get<string>("bitsflow.agent"));
-	EXPECT_EQ("5678", subcfg.get<string>("bitsflow.service"));
+	EXPECT_EQ("localhost", subcfg.get<string>("server.host"));
+	EXPECT_EQ("5678", subcfg.get<string>("server.port"));
 }
 
 TEST_F(ConfigTest, GlobalInstance)
@@ -165,7 +166,7 @@ TEST_F(ConfigTest, GlobalInstance)
 	cfg->loadString(yaml_str);
 	
 	Config *cfg2 = Config::getInstance();
-	EXPECT_EQ("localhost:1234", cfg2->get<string>("config.bitsflow.agent"));
+	EXPECT_EQ("localhost", cfg2->get<string>("config.server.host"));
 }
 
 TEST_F(ConfigTest, GetWithDefault)

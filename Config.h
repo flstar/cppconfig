@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include <vector>
 #include <map>
@@ -18,9 +19,12 @@ public:
 	enum {
 		OK = 0,
 		BASE = 10000,
+		OPEN_FILE_FAIL,
+		
 		KEY_NOT_FOUND,
 		INVALID_BOOL_VALUE,
 		INVALID_LONG_VALUE,
+		
 	};
 	
 public:
@@ -70,7 +74,7 @@ public:
 	}
 	
 	std::vector<std::string> list(const std::string &dir) const;
-	Config getSubConfig(const std::string &dir);
+	Config getSub(const std::string &dir);
 private:
 	std::string getItem(const std::string &key) const;
 	void setItem(const std::string &key, const std::string &value);
@@ -78,7 +82,7 @@ private:
 	template<typename T>
 	static T fromValue(const std::string &value);
 protected:
-	std::map<std::string, std::string> itemMap_;
+	std::map<std::string, std::string> items;
 protected:
 	void loadYamlNode(std::string prefix, const YAML::Node &node);
 
