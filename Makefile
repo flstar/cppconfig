@@ -1,19 +1,25 @@
-.PHONY: all clean
+.PHONY: default clean
 
-all: ConfigTest
 
 TARGET = ConfigTest
-OBJS = ConfigTest.o Config.o
+SRCS = Config.cc ConfigTest.cc
 LIBS = -lyaml-cpp -lgtest -lpthread
 
+OBJS = $(SRCS:.cc=.o)
+DEPS = $(OBJS:.o=.d)
+
 CXX = g++
-CXXFLAGS = -g
+CXXFLAGS = -g -MMD
+
+-include $(DEPS)
+
+default: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
+	$(CXX) $(LIBS) $^ -o $@
 
-.c.o:
-	$(CXX) $(CXXFLAGS) -o $@ $<
+%.o: %.cc
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(TARGET) $(OBJS)
+	rm -rf $(TARGET) $(OBJS) $(DEPS)
