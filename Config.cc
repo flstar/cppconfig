@@ -126,25 +126,25 @@ void Config::loadYamlNode(string prefix, const YAML::Node &node)
 
 void Config::loadStream(istream &in)
 {
-  YAML::Parser parser;
-  try {
-    YAML::Node doc;
-    parser.Load(in);
-    while (parser.GetNextDocument(doc)) {
-      loadYamlNode("", doc);
-    }
-  }
-  catch(YAML::ParserException &e) {
-	LOG("%s", e.what());
-    throw;
-  }
-  return;
+	YAML::Parser parser;
+	try {
+		YAML::Node doc;
+		parser.Load(in);
+		while (parser.GetNextDocument(doc)) {
+			loadYamlNode("", doc);
+		}
+	}
+	catch(YAML::ParserException &e) {
+		LOG("%s", e.what());
+		throw;
+	}
+	return;
 }
 
 void Config::loadString(const string &str)
 {
-  istringstream in(str);
-  loadStream(in);
+	istringstream in(str);
+	loadStream(in);
 }
 
 void Config::loadFile(const string &fn)
@@ -154,7 +154,8 @@ void Config::loadFile(const string &fn)
 		loadStream(fin);
 	}
 	else {
-		throw string("Failed to read the content of file: ") + fn;
+		throw ConfigException(errno,
+			"Failed to open file: %s", fn.c_str());
 	}
 }
 
@@ -225,20 +226,20 @@ void Config::loadv(const vector<string> &urls)
 
 void Config::load(const char *url, ...)
 { 
-  vector<string> urls;
-  const char *curr = NULL;
+	vector<string> urls;
+	const char *curr = NULL;
   
-  va_list args;
-  va_start(args, url);
-  curr = url;
-  do {
-    urls.push_back(curr);
-    curr = va_arg(args, const char *);
-  } while (curr != NULL);
+	va_list args;
+	va_start(args, url);
+	curr = url;
+	do {
+		urls.push_back(curr);
+		curr = va_arg(args, const char *);
+	} while (curr != NULL);
   
-  va_end(args);
+	va_end(args);
   
-  loadv(urls);
+	loadv(urls);
 }
 
 string Config::getItem(const string &key) const

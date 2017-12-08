@@ -12,31 +12,31 @@ class TestableConfig : public Config
 
 class ConfigTestEnv : public testing::Environment
 {
-  public:
-    virtual void SetUp()
-    {
-    }
-    virtual void TearDown()
-    {
-    }
+public:
+	virtual void SetUp()
+	{
+	}
+	virtual void TearDown()
+	{
+	}
 };
 
 class ConfigTest : public testing::Test
 {
-  public:
-    virtual void SetUp()
-    {
-    }
-    virtual void TearDown()
-    {
-    }
+public:
+	virtual void SetUp()
+	{
+	}
+	virtual void TearDown()
+	{
+	}
 };
 
 int main(int argc, char *argv[])
 {
-  testing::AddGlobalTestEnvironment(new ConfigTestEnv);
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+	testing::AddGlobalTestEnvironment(new ConfigTestEnv);
+	testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
 }
 
 #define EXPECT_IN(elem, vect) do {\
@@ -52,19 +52,19 @@ int main(int argc, char *argv[])
 
 const string yaml_str = "\
 config:\n\
-  bitsflow:\n\
-    agent: localhost:1234\n\
-    service: 5678\n\
-  testnum1: 100\n\
-  testnum2: 1K\n\
-  testnum3: 1m\n\
-  testnum4: 1G\n\
-  testnum5: 1T\n\
-  testnum-invalid: 1x\n\
+    bitsflow:\n\
+        agent: localhost:1234\n\
+        service: 5678\n\
+    testnum1: 100\n\
+    testnum2: 1K\n\
+    testnum3: 1m\n\
+    testnum4: 1G\n\
+    testnum5: 1T\n\
+    testnum-invalid: 1x\n\
  \n\
-  booltrue: true\n\
-  boolfalse: FALSE\n\
-  boolinvalid: invalid-bool\n\
+    booltrue: true\n\
+    boolfalse: FALSE\n\
+    boolinvalid: invalid-bool\n\
 ";
 
  
@@ -176,4 +176,16 @@ TEST_F(ConfigTest, GetWithDefault)
 	EXPECT_EQ(1L, cfg.get<long>("non-exist", 1L));
 	EXPECT_EQ(true, cfg.get<bool>("non-exist", true));
 	EXPECT_EQ("default", cfg.get<string>("non-exist", "default"));
+}
+
+TEST_F(ConfigTest, OpenNonExistFile)
+{
+	TestableConfig cfg;
+	try {
+		cfg.loadFile("/non-exist-xxxxx-yyyyyyy");
+		FAIL();
+	}
+	catch(const ConfigException &ex) {
+		EXPECT_EQ(ENOENT, ex.code);
+	}
 }
